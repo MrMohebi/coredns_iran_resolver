@@ -17,8 +17,7 @@ import (
 
 func init() { plugin.Register("iran_resolver", setup) }
 
-// setup is the function that gets called when the config parser see the token "example". Setup is responsible
-// for parsing any extra options the example plugin may have. The first token this function sees is "example".
+// setup is the function that gets called when the config parser see the token "iran_resolver".
 func setup(c *caddy.Controller) error {
 	ir, err := parseIR(c)
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// IranResolver is an example plugin to show how to write a plugin.
+// IranResolver is a coredns plugin to generate hosts file for banned and sanctioned urls.
 type IranResolver struct {
 	dns2check            []net.Addr
 	sanctionSearchParams []string
@@ -49,7 +49,7 @@ func New() *IranResolver {
 // Name implements the Handler interface.
 func (ir *IranResolver) Name() string { return "iran_resolver" }
 
-// ServeDNS implements the plugin.Handler interface. This method gets called when example is used
+// ServeDNS implements the plugin.Handler interface. This method gets called when iran_resolver is used
 // in a Server.
 func (ir *IranResolver) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 
