@@ -6,7 +6,7 @@ It's useful to create something liked https://shecan.ir/; A DNS server witch res
 example:
 ```
 iran_resolver {
-    dns-to-check 78.157.42.101:53 10.202.10.202:53
+    dns-to-check 78.157.42.101:53 10.202.10.202:53  # Reqiered
 
     sanction-search develop.403 electro
     ban-search 10.10.34.35
@@ -16,8 +16,8 @@ iran_resolver {
 
     result-hosts-file /etc/ir-host
 
-    sanction-dest-server-ips 10.10.10.10 20.20.20.20
-    ban-dest-server-ips 40.40.40.40 30.30.30.30
+    sanction-dest-server-ips 10.10.10.10 20.20.20.20 # Reqiered
+    ban-dest-server-ips 40.40.40.40 30.30.30.30 # Reqiered
 
     sanction-buffer-size 10
     ban-buffer-size 10
