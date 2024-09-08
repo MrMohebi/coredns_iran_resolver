@@ -1,4 +1,4 @@
-module coredns_iran_resolver
+module github.com/MrMohebi/coredns_iran_resolver
 
 go 1.22.2
 
