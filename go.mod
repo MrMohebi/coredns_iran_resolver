@@ -1,6 +1,6 @@
 module github.com/MrMohebi/coredns_iran_resolver
 
-go 1.22.2
+go 1.22.0
 
 require (
 	github.com/coredns/caddy v1.1.1
