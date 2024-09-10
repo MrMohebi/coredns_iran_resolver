@@ -10,7 +10,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -295,30 +294,70 @@ func initHostFile(path string, welcomeSentence string) error {
 }
 
 func updateHostsFileWithIps(path string, ips []net.IP) error {
-	data, err := os.ReadFile(path)
+	hostsList, err := getHostsFromFile(path)
 	if err != nil {
-		return errors.New("Error reading hosts file")
+		return err
+	}
+
+	hostsList = removeDuplicates(hostsList)
+
+	err = removeNonCommentLines(path)
+	if err != nil {
+		return err
 	}
 
 	newContent := ""
 
-	ipRegex := regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
-
-	scanner := bufio.NewScanner(strings.NewReader(string(data)))
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if ipRegex.MatchString(line) {
-			newLine := ipRegex.ReplaceAllString(line, getRandomIp(ips).String())
+	for _, s := range hostsList {
+		for _, ip := range ips {
+			newLine := ip.String() + "    " + s
 			newContent += newLine + "\n"
-		} else {
-			newContent += line + "\n"
 		}
 	}
 
-	err = os.WriteFile(path, []byte(newContent), 0644)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		return errors.New("Error writing to hosts file")
+		return err
 	}
+
+	_, err = f.WriteString(newContent)
+	if err != nil {
+		return err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func getHostsFromFile(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var firstElements []string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "#") {
+			continue // Ignore lines starting with #
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			firstElements = append(firstElements, fields[1])
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return firstElements, nil
 }

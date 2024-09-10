@@ -5,13 +5,16 @@ import (
 	"github.com/coredns/coredns/plugin"
 	"github.com/miekg/dns"
 	"io"
-	"math/rand"
 	"net"
 	"os"
 	"strings"
 	"sync"
-	"time"
 )
+
+type resolver struct {
+	url string
+	ip  net.IP
+}
 
 // IranResolver is a coredns plugin to generate hosts file for banned and sanctioned urls.
 type IranResolver struct {
@@ -24,8 +27,8 @@ type IranResolver struct {
 
 	banMu        sync.Mutex
 	sanctionMu   sync.Mutex
-	sanctionList []string
-	banList      []string
+	sanctionList []resolver
+	banList      []resolver
 
 	banListBufferSize      int
 	sanctionListBufferSize int
@@ -84,6 +87,7 @@ func askFromDnsServers(ir *IranResolver, req *dns.Msg) {
 
 }
 func checkSanction(ir *IranResolver, resp *dns.Msg) (bool, error) {
+	var err error
 	result := false
 	for _, p := range ir.sanctionSearchParams {
 		if strings.Contains(resp.String(), p) {
@@ -93,7 +97,9 @@ func checkSanction(ir *IranResolver, resp *dns.Msg) (bool, error) {
 	}
 	if result {
 		url := strings.TrimSuffix(resp.Question[0].Name, ".")
-		err := addSanctionToList(ir, url)
+		if !isInList(ir.sanctionList, url) {
+			err = addSanctionToList(ir, url)
+		}
 
 		return result, err
 	}
@@ -102,6 +108,7 @@ func checkSanction(ir *IranResolver, resp *dns.Msg) (bool, error) {
 }
 
 func checkBan(ir *IranResolver, resp *dns.Msg) (bool, error) {
+	var err error
 	result := false
 	for _, p := range ir.banSearchParams {
 		if strings.Contains(resp.String(), p) {
@@ -111,7 +118,9 @@ func checkBan(ir *IranResolver, resp *dns.Msg) (bool, error) {
 	}
 	if result {
 		url := strings.TrimSuffix(resp.Question[0].Name, ".")
-		err := addBanToList(ir, url)
+		if !isInList(ir.banList, url) {
+			err = addBanToList(ir, url)
+		}
 
 		return result, err
 	}
@@ -123,15 +132,21 @@ func addBanToList(ir *IranResolver, url string) error {
 	ir.banMu.Lock()
 	defer ir.banMu.Unlock()
 
-	ir.banList = append(ir.banList, url)
-
+	for _, ip := range ir.banDestServers {
+		ir.banList = append(
+			ir.banList,
+			resolver{
+				url: url,
+				ip:  ip,
+			})
+	}
 	if len(ir.banList) > ir.banListBufferSize {
 		f, err := os.OpenFile(ir.banHostsFile, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			return err
 		}
 		for _, h := range ir.banList {
-			if _, err = f.WriteString("\n" + getRandomIp(ir.banDestServers).String() + "    " + h); err != nil {
+			if _, err = f.WriteString("\n" + h.ip.String() + "    " + h.url); err != nil {
 				return err
 			}
 		}
@@ -155,7 +170,14 @@ func addSanctionToList(ir *IranResolver, url string) error {
 	ir.sanctionMu.Lock()
 	defer ir.sanctionMu.Unlock()
 
-	ir.sanctionList = append(ir.sanctionList, url)
+	for _, ip := range ir.sanctionDestServers {
+		ir.sanctionList = append(
+			ir.sanctionList,
+			resolver{
+				url: url,
+				ip:  ip,
+			})
+	}
 
 	if len(ir.sanctionList) > ir.sanctionListBufferSize {
 		f, err := os.OpenFile(ir.sanctionHostsFile, os.O_APPEND|os.O_WRONLY, 0644)
@@ -163,7 +185,7 @@ func addSanctionToList(ir *IranResolver, url string) error {
 			return err
 		}
 		for _, h := range ir.sanctionList {
-			if _, err = f.WriteString("\n" + getRandomIp(ir.sanctionDestServers).String() + "    " + h); err != nil {
+			if _, err = f.WriteString("\n" + h.ip.String() + "    " + h.url); err != nil {
 				return err
 			}
 		}
@@ -182,14 +204,15 @@ func addSanctionToList(ir *IranResolver, url string) error {
 	return nil
 }
 
-func getRandomIp(list []net.IP) net.IP {
-	if len(list) == 0 {
-		return nil
+func isInList(list []resolver, url string) bool {
+	result := false
+	for _, i := range list {
+		if i.url == url {
+			result = true
+			break
+		}
 	}
-	randSource := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(randSource)
-	randomIndex := r.Intn(len(list))
-	return list[randomIndex]
+	return result
 }
 
 func mergeHostsFiles(f1Path string, f2Path string, dest string) error {
