@@ -141,7 +141,7 @@ func addBanToList(ir *IranResolver, url string) error {
 			})
 	}
 	if len(ir.banList) > ir.banListBufferSize {
-		f, err := os.OpenFile(ir.banHostsFile, os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(ir.banHostsFile, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func addSanctionToList(ir *IranResolver, url string) error {
 	}
 
 	if len(ir.sanctionList) > ir.sanctionListBufferSize {
-		f, err := os.OpenFile(ir.sanctionHostsFile, os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(ir.sanctionHostsFile, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			return err
 		}
@@ -228,7 +228,7 @@ func mergeHostsFiles(f1Path string, f2Path string, dest string) error {
 	}
 	defer f2.Close()
 
-	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0644)
+	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
