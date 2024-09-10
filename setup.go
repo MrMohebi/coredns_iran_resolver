@@ -285,7 +285,7 @@ func parsePositiveInt(c *caddyfile.Dispenser) (int, error) {
 func initHostFile(path string, welcomeSentence string) error {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		title := []byte("\n\n# " + welcomeSentence + " \n")
-		err = os.WriteFile(path, title, 0600)
+		err = os.WriteFile(path, title, 0644)
 		if err != nil {
 			return errors.New("couldn't create hosts file")
 		}
@@ -315,7 +315,7 @@ func updateHostsFileWithIps(path string, ips []net.IP) error {
 		}
 	}
 
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
