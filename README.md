@@ -11,10 +11,10 @@ iran_resolver {
     sanction-search develop.403 electro
     ban-search 10.10.34.35
 
-    sanction-hosts-file /etc/sanction-host
-    ban-hosts-file /etc/ban-host
+    sanction-hosts-file /etc/hosts_dir/hosts-sanction
+    ban-hosts-file /etc/hosts_dir/hosts-ban
 
-    result-hosts-file /etc/ir-host
+    result-hosts-file /etc/hosts_dir/hosts-ir
 
     sanction-dest-server-ips 10.10.10.10 20.20.20.20 # Reqiered
     ban-dest-server-ips 40.40.40.40 30.30.30.30 # Reqiered

@@ -43,9 +43,9 @@ func New() *IranResolver {
 	return &IranResolver{
 		banListBufferSize:      10,
 		sanctionListBufferSize: 10,
-		sanctionHostsFile:      "/etc/hosts-sanction",
-		banHostsFile:           "/etc/hosts-ban",
-		resultHostsFile:        "/etc/hosts-iran-resolver",
+		sanctionHostsFile:      "/etc/hosts_dir/hosts-sanction",
+		banHostsFile:           "/etc/hosts_dir/hosts-ban",
+		resultHostsFile:        "/etc/hosts_dir/hosts-ir",
 	}
 }
 
@@ -67,19 +67,22 @@ func askFromDnsServers(ir *IranResolver, req *dns.Msg) {
 	for _, server := range ir.dns2check {
 		resp, err := dns.Exchange(req, server.String())
 		if err != nil {
-			println(err)
+			println("[IR-ERROR] when asking server => {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
+			return
 		}
 
 		if r, err := checkBan(ir, resp); r {
 			if err != nil {
-				println(err)
+				println("[IR-ERROR] when checking ban =>  {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
+				return
 			}
 			break
 		}
 
 		if r, err := checkSanction(ir, resp); r {
 			if err != nil {
-				println(err)
+				println("[IR-ERROR] when checking sanction {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
+				return
 			}
 			break
 		}
@@ -96,7 +99,7 @@ func checkSanction(ir *IranResolver, resp *dns.Msg) (bool, error) {
 		}
 	}
 	if result {
-		url := strings.TrimSuffix(resp.Question[0].Name, ".")
+		url := getQuestionUrls(resp)[0]
 		if !isInList(ir.sanctionList, url) {
 			err = addSanctionToList(ir, url)
 		}
@@ -117,7 +120,7 @@ func checkBan(ir *IranResolver, resp *dns.Msg) (bool, error) {
 		}
 	}
 	if result {
-		url := strings.TrimSuffix(resp.Question[0].Name, ".")
+		url := getQuestionUrls(resp)[0]
 		if !isInList(ir.banList, url) {
 			err = addBanToList(ir, url)
 		}
@@ -244,4 +247,12 @@ func mergeHostsFiles(f1Path string, f2Path string, dest string) error {
 		return err
 	}
 	return nil
+}
+
+func getQuestionUrls(msg *dns.Msg) []string {
+	var result []string
+	for _, question := range msg.Question {
+		result = append(result, strings.TrimSuffix(question.Name, "."))
+	}
+	return result
 }
