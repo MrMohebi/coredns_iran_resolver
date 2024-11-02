@@ -72,6 +72,7 @@ func askFromDnsServers(ir *IranResolver, req *dns.Msg) {
 		}
 
 		if r, err := checkBan(ir, resp); r {
+			println("[IR-INFO] asked from (", server.String(), ") and {", strings.Join(getQuestionUrls(req), " "), "} was Banned!")
 			if err != nil {
 				println("[IR-ERROR] when checking ban =>  {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
 				return
@@ -80,6 +81,7 @@ func askFromDnsServers(ir *IranResolver, req *dns.Msg) {
 		}
 
 		if r, err := checkSanction(ir, resp); r {
+			println("[IR-INFO] asked from (", server.String(), ") and {", strings.Join(getQuestionUrls(req), " "), "} was Sanctioned!")
 			if err != nil {
 				println("[IR-ERROR] when checking sanction {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
 				return
@@ -102,6 +104,8 @@ func checkSanction(ir *IranResolver, resp *dns.Msg) (bool, error) {
 		url := getQuestionUrls(resp)[0]
 		if !isInList(ir.sanctionList, url) {
 			err = addSanctionToList(ir, url)
+		} else {
+			println("[IR-INFO] the url {", url, "} is already in Sanction cache, it will be wrote to the file when cache limit exceeded")
 		}
 
 		return result, err
@@ -123,6 +127,8 @@ func checkBan(ir *IranResolver, resp *dns.Msg) (bool, error) {
 		url := getQuestionUrls(resp)[0]
 		if !isInList(ir.banList, url) {
 			err = addBanToList(ir, url)
+		} else {
+			println("[IR-INFO] the url {", url, "} is already in Banned cache, it will be wrote to the file when cache limit exceeded")
 		}
 
 		return result, err
@@ -148,11 +154,14 @@ func addBanToList(ir *IranResolver, url string) error {
 		if err != nil {
 			return err
 		}
+		print("[IR-INFO] flushing {")
 		for _, h := range ir.banList {
+			print(h.url, ", ")
 			if _, err = f.WriteString("\n" + h.ip.String() + "    " + h.url); err != nil {
 				return err
 			}
 		}
+		println("} to Banned file")
 		err = f.Close()
 		if err != nil {
 			return err
@@ -187,11 +196,14 @@ func addSanctionToList(ir *IranResolver, url string) error {
 		if err != nil {
 			return err
 		}
+		print("[IR-INFO] flushing {")
 		for _, h := range ir.sanctionList {
+			print(h.url, ", ")
 			if _, err = f.WriteString("\n" + h.ip.String() + "    " + h.url); err != nil {
 				return err
 			}
 		}
+		println("} to Banned file")
 		err = f.Close()
 		if err != nil {
 			return err
