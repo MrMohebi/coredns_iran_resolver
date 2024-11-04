@@ -68,14 +68,14 @@ func askFromDnsServers(ir *IranResolver, req *dns.Msg) {
 		resp, err := dns.Exchange(req, server.String())
 		if err != nil {
 			println("[IR-ERROR] when asking server => {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
-			return
+			continue
 		}
 
 		if r, err := checkBan(ir, resp); r {
 			println("[IR-INFO] asked from (", server.String(), ") and {", strings.Join(getQuestionUrls(req), " "), "} was Banned!")
 			if err != nil {
 				println("[IR-ERROR] when checking ban =>  {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
-				return
+				continue
 			}
 			break
 		}
@@ -84,7 +84,7 @@ func askFromDnsServers(ir *IranResolver, req *dns.Msg) {
 			println("[IR-INFO] asked from (", server.String(), ") and {", strings.Join(getQuestionUrls(req), " "), "} was Sanctioned!")
 			if err != nil {
 				println("[IR-ERROR] when checking sanction {" + strings.Join(getQuestionUrls(req), " ") + "}" + err.Error())
-				return
+				continue
 			}
 			break
 		}
