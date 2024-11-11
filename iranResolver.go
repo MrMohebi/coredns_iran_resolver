@@ -203,7 +203,7 @@ func addSanctionToList(ir *IranResolver, url string) error {
 				return err
 			}
 		}
-		println("} to Banned file")
+		println("} to Sanction file")
 		err = f.Close()
 		if err != nil {
 			return err
